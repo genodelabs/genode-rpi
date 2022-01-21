@@ -1,5 +1,4 @@
 TARGET   = rpi_platform_drv
-REQUIRES = arm_v6
 SRC_CC   = device.cc
 SRC_CC  += device_component.cc
 SRC_CC  += device_model_policy.cc

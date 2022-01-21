@@ -40,9 +40,10 @@ struct Driver::Property_message
 	uint32_t buf_size = 0;
 
 	enum Code { REQUEST          = 0,
-	            RESPONSE_SUCCESS = 0x80000000 };
+	            RESPONSE_SUCCESS = 0x80000000,
+	            RESPONSE_ERROR   = 0x80000001 };
 
-	Code code = REQUEST;
+	volatile Code code = REQUEST;
 
 	/*
 	 * Start of the buffer that contains a sequence of tags
@@ -89,25 +90,25 @@ struct Driver::Property_message
 		 * SFINAE to the rescue!
 		 */
 		template <typename T>
-		static size_t response_size(typename T::Response *)
+		static uint32_t response_size(typename T::Response *)
 		{
 			return sizeof(typename T::Response);
 		}
 
 		template <typename>
-		static size_t response_size(...)
+		static uint32_t response_size(...)
 		{
 			return 0;
 		}
 
 		template <typename T>
-		static size_t request_size(typename T::Request *)
+		static uint32_t request_size(typename T::Request *)
 		{
 			return sizeof(typename T::Request);
 		}
 
 		template <typename>
-		static size_t request_size(...)
+		static uint32_t request_size(...)
 		{
 			return 0;
 		}
@@ -127,7 +128,7 @@ struct Driver::Property_message
 		template <typename>
 		void construct_response(...) { }
 
-		static constexpr size_t payload_size()
+		static constexpr uint32_t payload_size()
 		{
 			return max(request_size<TAG>(0), response_size<TAG>(0));
 		}
@@ -163,7 +164,7 @@ struct Driver::Property_message
 	{
 		auto *tag = construct_at<Tag<POLICY> >(buffer + buf_size, request_args...);
 
-		buf_size += sizeof(Tag<POLICY>) + Tag<POLICY>::payload_size();
+		buf_size += (uint32_t) sizeof(Tag<POLICY>) + Tag<POLICY>::payload_size();
 
 		return *(typename POLICY::Response *)tag->payload;
 	}
@@ -173,21 +174,21 @@ struct Driver::Property_message
 	{
 		construct_at<Tag<POLICY> >(buffer + buf_size, request_args...);
 
-		buf_size += sizeof(Tag<POLICY>) + Tag<POLICY>::payload_size();
+		buf_size += (uint32_t) sizeof(Tag<POLICY>) + Tag<POLICY>::payload_size();
 	}
 
 	void finalize()
 	{
 		/* append end tag */
 		*(uint32_t *)(buffer + buf_size) = 0;
-		buf_size += sizeof(uint32_t);
+		buf_size += 3 * sizeof(uint32_t); /* end tag, and header(buf_size and code) */
 	}
 
 	static unsigned channel() { return 8; }
 
 	static Rpi::Videocore_cache_policy cache_policy()
 	{
-		return Rpi::NON_COHERENT; /* for channel 8 only */
+		return Rpi::UNCACHED;
 	}
 
 	void dump(char const *label)

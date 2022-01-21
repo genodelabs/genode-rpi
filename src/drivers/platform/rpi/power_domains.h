@@ -64,4 +64,6 @@ struct Driver::Power_domains
 	Domain i2c_2  { powers, "i2c_2",  mbox, 6 };
 	Domain spi    { powers, "spi",    mbox, 7 };
 	Domain ccp2tx { powers, "ccp2tx", mbox, 8 };
+
+	Power_domains(Powers & powers, Mbox & mbox) : powers(powers), mbox(mbox) {}
 };
