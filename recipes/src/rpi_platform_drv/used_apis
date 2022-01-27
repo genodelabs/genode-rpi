@@ -1,0 +1,5 @@
+base
+os
+platform_session
+report_session
+rpi_mbox_session
