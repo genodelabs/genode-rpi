@@ -1,0 +1,64 @@
+create_boot_directory
+import_from_depot [depot_user]/src/[base_src] \
+                  [depot_user]/src/rpi_platform_drv \
+                  [depot_user]/src/rpi_fb_drv \
+                  [depot_user]/src/init
+
+build { server/event_dump test/framebuffer }
+
+install_config {
+<config>
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="CPU"/>
+		<service name="LOG"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<default caps="100"/>
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides><service name="Timer"/></provides>
+	</start>
+
+	<start name="rpi_platform_drv" caps="200">
+		<resource name="RAM" quantum="2M"/>
+		<provides>
+			<service name="Platform"/>
+			<service name="Rpi_mbox"/>
+		</provides>
+		<config>
+			<device name="mbox" type="broadcom-mbox">
+				<io_mem address="0x2000b800" size="0x1000"/>
+			</device>
+		</config>
+	</start>
+
+	<start name="rpi_fb_drv" caps="120">
+		<resource name="RAM" quantum="4M"/>
+	</start>
+
+	<start name="event_dump">
+		<resource name="RAM" quantum="1M"/>
+		<provides> <service name="Event"/> </provides>
+		<config/>
+	</start>
+
+	<start name="test-framebuffer">
+		<resource name="RAM" quantum="10M"/>
+		<provides> <service name="Capture"/> </provides>
+		<config/>
+	</start>
+
+</config>}
+
+build_boot_image { event_dump test-framebuffer }
+
+run_genode_until forever
