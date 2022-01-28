@@ -19,9 +19,6 @@
 #include <util/construct_at.h>
 #include <base/log.h>
 
-/* board-specific includes */
-#include <drivers/defs/rpi.h>
-
 namespace Driver {
 	using namespace Genode;
 	struct Property_message;
@@ -38,6 +35,11 @@ namespace Driver {
 struct Driver::Property_message
 {
 	uint32_t buf_size = 0;
+
+	enum Videocore_cache_policy { NON_COHERENT = 0,
+	                              COHERENT     = 1,
+	                              L2_ONLY      = 2,
+	                              UNCACHED     = 3 };
 
 	enum Code { REQUEST          = 0,
 	            RESPONSE_SUCCESS = 0x80000000,
@@ -186,9 +188,9 @@ struct Driver::Property_message
 
 	static unsigned channel() { return 8; }
 
-	static Rpi::Videocore_cache_policy cache_policy()
+	static Videocore_cache_policy cache_policy()
 	{
-		return Rpi::UNCACHED;
+		return UNCACHED;
 	}
 
 	void dump(char const *label)

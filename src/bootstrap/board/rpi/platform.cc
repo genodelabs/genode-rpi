@@ -15,7 +15,7 @@
 #include <hw/assert.h>
 #include <platform.h>
 
-using namespace Rpi;
+using namespace Hw::Rpi_board;
 
 
 /**
