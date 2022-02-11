@@ -70,7 +70,7 @@ class Mbox : Genode::Attached_mmio
 		                                             MSG_BUFFER_SIZE,
 		                                             Genode::UNCACHED};
 
-		addr_t const _msg_phys = { Dataspace_client(_msg_buffer.cap()).phys_addr() };
+		addr_t const _msg_phys = { _env.pd().dma_addr(_msg_buffer.cap()) };
 
 		struct Delayer : Mmio::Delayer
 		{
