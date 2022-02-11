@@ -1,4 +1,4 @@
 _/src/rpi_platform_drv
-_/src/usb_host_drv
+_/src/legacy_usb_host_drv
 _/src/usb_net_drv
 _/raw/drivers_nic-rpi
