@@ -13,63 +13,63 @@
 
 #include <base/component.h>
 #include <power_domains.h>
-#include <root.h>
+#include <common.h>
 #include <rpi_mbox_root.h>
 
 namespace Driver { struct Main; };
 
 struct Driver::Main
 {
-	void update_config();
+	Env                  & _env;
+	Attached_rom_dataspace _config_rom     { _env, "config"        };
+	Signal_handler<Main>   _config_handler { _env.ep(), *this,
+	                                         &Main::_handle_config };
+	Common                 _common         { _env, _config_rom     };
 
-	Env                  & env;
-	Heap                   heap           { env.ram(), env.rm()    };
-	Sliced_heap            sliced_heap    { env.ram(), env.rm()    };
-	Attached_rom_dataspace config         { env, "config"          };
-	Device_model           devices        { heap                   };
-	Signal_handler<Main>   config_handler { env.ep(), *this,
-	                                        &Main::update_config   };
-	Driver::Root           root           { env, sliced_heap,
-	                                        config, devices        };
+	Constructible<Mbox>           _mbox          { };
+	Constructible<Rpi_mbox::Root> _mbox_root     { };
+	Constructible<Power_domains>  _power_domains { };
 
-	Constructible<Mbox>           mbox          { };
-	Constructible<Rpi_mbox::Root> mbox_root     { };
-	Constructible<Power_domains>  power_domains { };
+	void _handle_config();
 
-	Main(Genode::Env & e)
-	: env(e)
-	{
-		devices.update(config.xml());
-		config.sigh(config_handler);
-
-		/* construct firmware mailbox from device info */
-		devices.for_each([&] (Device & dev) {
-			if (dev.type() != "broadcom-mbox")
-				return;
-			dev.for_each_io_mem([&] (unsigned, const Device::Io_mem &io_mem) {
-				if (!mbox.constructed()) mbox.construct(env, io_mem.range); });
-		});
-
-		if (!mbox.constructed()) {
-			error("Failed to find broadcom-mbox device in configuration!");
-			return;
-		}
-
-		power_domains.construct(devices.powers(), *mbox);
-		mbox_root.construct(env, heap, *mbox);
-
-		env.parent().announce(env.ep().manage(*mbox_root));
-		env.parent().announce(env.ep().manage(root));
-	}
+	Main(Genode::Env & env);
 };
 
 
-void Driver::Main::update_config()
+void Driver::Main::_handle_config()
 {
-	config.update();
-	devices.update(config.xml());
-	root.update_policy();
+	_config_rom.update();
+	_common.handle_config(_config_rom.xml());
 }
+
+
+Driver::Main::Main(Genode::Env & env)
+:
+	_env(env)
+{
+	_config_rom.sigh(_config_handler);
+	_handle_config();
+
+	/* construct firmware mailbox from device info */
+	_common.devices().for_each([&] (Device & dev) {
+		if (dev.type() != "broadcom-mbox")
+			return;
+		dev.for_each_io_mem([&] (unsigned, const Device::Io_mem &io_mem) {
+			if (!_mbox.constructed()) _mbox.construct(env, io_mem.range); });
+	});
+
+	if (!_mbox.constructed()) {
+		error("Failed to find broadcom-mbox device in configuration!");
+		return;
+	}
+
+	_power_domains.construct(_common.devices().powers(), *_mbox);
+	_mbox_root.construct(_env, _common.heap(), *_mbox);
+
+	_env.parent().announce(_env.ep().manage(*_mbox_root));
+	_common.announce_service();
+}
+
 
 void Component::construct(Genode::Env &env) {
 	static Driver::Main main(env); }

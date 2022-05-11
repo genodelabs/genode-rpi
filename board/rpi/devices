@@ -1,0 +1,15 @@
+<devices>
+	<device name="mbox" type="broadcom-mbox">
+		<io_mem address="0x2000b800" size="0x1000"/>
+	</device>
+
+	<device name="dwc_otg" type="brcm,bcm2835-usb">
+		<io_mem       address="0x20980000" size="0x10000"/>
+		<irq          number="9"/>
+		<power-domain name="usb"/>
+	</device>
+
+	<device name="mmc0" type="brcm,bcm2835-sdhci">
+		<io_mem address="0x20300000" size="0x100"/>
+	</device>
+</devices>

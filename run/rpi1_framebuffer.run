@@ -2,7 +2,8 @@ create_boot_directory
 import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/src/rpi_platform_drv \
                   [depot_user]/src/rpi_fb_drv \
-                  [depot_user]/src/init
+                  [depot_user]/src/init \
+                  [depot_user]/raw/rpi-devices
 
 build { server/event_dump test/framebuffer }
 
@@ -34,11 +35,6 @@ install_config {
 			<service name="Platform"/>
 			<service name="Rpi_mbox"/>
 		</provides>
-		<config>
-			<device name="mbox" type="broadcom-mbox">
-				<io_mem address="0x2000b800" size="0x1000"/>
-			</device>
-		</config>
 	</start>
 
 	<start name="rpi_fb_drv" caps="120">
