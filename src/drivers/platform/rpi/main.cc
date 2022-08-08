@@ -54,8 +54,8 @@ Driver::Main::Main(Genode::Env & env)
 	_common.devices().for_each([&] (Device & dev) {
 		if (dev.type() != "broadcom-mbox")
 			return;
-		dev.for_each_io_mem([&] (unsigned, const Device::Io_mem &io_mem) {
-			if (!_mbox.constructed()) _mbox.construct(env, io_mem.range); });
+		dev.for_each_io_mem([&] (unsigned, const Device::Io_mem::Range &io_mem_range) {
+			if (!_mbox.constructed()) _mbox.construct(env, io_mem_range); });
 	});
 
 	if (!_mbox.constructed()) {
