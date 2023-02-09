@@ -40,6 +40,8 @@ namespace Hw::Rpi3_board {
 
 		/* USB host controller */
 		DWC_IRQ = 9,
+
+		NR_OF_CPUS = 4,
 	};
 };
 

@@ -8,8 +8,6 @@ SRC_CC += spec/arm/bcm2837_pic.cc
 SRC_CC += kernel/vm_thread_off.cc
 SRC_CC += platform_services.cc
 
-NR_OF_CPUS = 4
-
 vpath spec/arm/%.cc $(REP_DIR)/src/core
 
 # include less specific configuration

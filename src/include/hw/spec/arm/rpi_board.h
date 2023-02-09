@@ -43,6 +43,8 @@ namespace Hw::Rpi_board {
 		USB_DWC_OTG_SIZE       = 0x20000,
 
 		DWC_IRQ                = 9,
+
+		NR_OF_CPUS             = 1,
 	};
 }
 
