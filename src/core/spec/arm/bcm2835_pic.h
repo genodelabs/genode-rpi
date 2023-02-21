@@ -32,6 +32,8 @@ class Board::Global_interrupt_controller
 
 	public:
 
+		void init() { }
+
 		int increment_and_return_sof_cnt() { return ++_sof_cnt; }
 
 		void reset_sof_cnt() { _sof_cnt = 0; }

@@ -32,6 +32,8 @@ struct Board::Timer : Genode::Mmio
 	struct Cmp : Register<0x10, 32> { };
 
 	Timer(unsigned);
+
+	void init();
 };
 
 #endif /* _SRC__CORE__BCM2835__SYSTEM_TIMER_H_ */

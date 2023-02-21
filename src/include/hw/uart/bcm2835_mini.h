@@ -210,6 +210,12 @@ class Genode::Bcm2835_mini_uart : Mmio
 		 * Send ASCII char 'c' over the UART interface
 		 */
 		inline void put_char(char const c);
+
+
+		/**
+		 * On resume re-init serial device
+		 */
+		void init() { /* not supported */ }
 };
 
 
