@@ -31,10 +31,11 @@ Board::Timer::Timer(unsigned)
 
 void Timer::_start_one_shot(time_t const ticks)
 {
+	/* ticks is guaranteed to be less than _max_value() resp. 4-byte */
+	Device::Clo::access_t off = (Device::Clo::access_t) (ticks < 2 ? 2 : ticks);
 	_device.write<Device::Cs::M1>(1);
 	_device.read<Device::Cs>();
-	_device.write<Device::Cmp>(_device.read<Device::Clo>()
-	                           + (ticks < 2 ? 2 : ticks));
+	_device.write<Device::Cmp>(_device.read<Device::Clo>() + off);
 }
 
 
@@ -58,8 +59,8 @@ time_t Timer::_duration() const
 	Device::Clo::access_t const clo = _device.read<Device::Clo>();
 	Device::Cmp::access_t const cmp = _device.read<Device::Cmp>();
 	Device::Cs::access_t  const irq = _device.read<Device::Cs::M1>();
-	uint32_t d = (irq) ? (uint32_t)_last_timeout_duration + (clo - cmp)
-	                   : clo - (cmp - _last_timeout_duration);
+	time_t d = (irq) ? _last_timeout_duration + (clo - cmp)
+	                 : clo - (cmp - _last_timeout_duration);
 	return d;
 }
 

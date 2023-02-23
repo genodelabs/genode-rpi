@@ -25,5 +25,3 @@ vpath spec/arm/%.cc $(REP_DIR)/src/core
 
 # include less specific configuration
 include $(call select_from_repositories,lib/mk/spec/arm/core-hw.inc)
-
-CC_CXX_WARN_STRICT_CONVERSION =
