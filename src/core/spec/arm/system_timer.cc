@@ -18,7 +18,7 @@
 #include <platform.h>
 #include <kernel/timer.h>
 
-using namespace Genode;
+using namespace Core;
 using namespace Kernel;
 using Device = Board::Timer;
 

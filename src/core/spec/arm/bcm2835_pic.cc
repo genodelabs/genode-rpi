@@ -15,7 +15,7 @@
 #include <board.h>
 #include <platform.h>
 
-using namespace Genode;
+using namespace Core;
 
 
 bool Board::Bcm2835_pic::Usb_dwc_otg::_need_trigger_sof(uint32_t host_frame,
