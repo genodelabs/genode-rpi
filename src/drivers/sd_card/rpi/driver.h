@@ -32,6 +32,8 @@ class Sd_card::Driver : public  Driver_base,
 {
 	private:
 
+		using Mmio = Genode::Mmio;
+
 		struct Blksizecnt : Register<0x4, 32>
 		{
 			struct Blkcnt  : Bitfield<16, 16> { };
