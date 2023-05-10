@@ -40,10 +40,21 @@ void Board::Cpu::wake_up_all_cpus(void * ip)
 	/* start when in qemu */
 	_crt0_qemu_start_secondary_cpus = 1;
 
-	/* start on real hardware */
+	/*
+	 * Start on real hardware by setting ip at designated addresses
+	 */
+
+	/**
+	 * Unfortunately GCC12 includes some heuristic, which
+	 * complains about memory address pointer declaration
+	 * like the below ones, if the address is below 4K
+	 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Warray-bounds"
 	*((void * volatile *) 0xe0) = ip;   /* cpu 1 */
 	*((void * volatile *) 0xe8) = ip;   /* cpu 2 */
 	*((void * volatile *) 0xf0) = ip;   /* cpu 3 */
+#pragma GCC diagnostic pop
 
 	/* send event for both variants */
 	asm volatile("dsb #15; sev");

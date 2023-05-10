@@ -73,6 +73,12 @@ class Board::Bcm2837_pic : Genode::Mmio
 
 		Bcm2835_pic _bcm2835_pic;
 
+		/*
+		 * Noncopyable
+		 */
+		Bcm2837_pic(Bcm2837_pic const &);
+		Bcm2837_pic &operator = (Bcm2837_pic const &);
+
 	public:
 
 		Bcm2837_pic(Global_interrupt_controller &);

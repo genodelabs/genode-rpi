@@ -128,6 +128,12 @@ class Board::Bcm2835_pic : Genode::Mmio
 			return i < 32 ? (p1 & (1 << i)) : (p2 & (1 << (i - 32)));
 		}
 
+		/*
+		 * Noncopyable
+		 */
+		Bcm2835_pic(Bcm2835_pic const &);
+		Bcm2835_pic &operator = (Bcm2835_pic const &);
+
 	public:
 
 		Bcm2835_pic(Global_interrupt_controller &global_irq_ctrl,

@@ -25,7 +25,10 @@
 
 namespace Board {
 	using namespace Hw::Rpi_board;
-	class Pic : public Bcm2835_pic { };
+	class Pic : public Bcm2835_pic
+	{
+		using Bcm2835_pic::Bcm2835_pic;
+	};
 };
 
 #endif /* _CORE__SPEC__RPI__BOARD_H_ */
