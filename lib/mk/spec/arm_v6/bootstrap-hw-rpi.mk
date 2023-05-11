@@ -9,4 +9,6 @@ SRC_S   += bootstrap/spec/arm/crt0.s
 
 vpath board/rpi/platform.cc $(REP_DIR)/src/bootstrap
 
+CC_MARCH = -march=armv6k+nofp -mfpu=vfp
+
 include $(call select_from_repositories,lib/mk/bootstrap-hw.inc)
