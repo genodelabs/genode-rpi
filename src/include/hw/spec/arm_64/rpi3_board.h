@@ -40,9 +40,9 @@ namespace Hw::Rpi3_board {
 
 		/* USB host controller */
 		DWC_IRQ = 9,
-
-		NR_OF_CPUS = 4,
 	};
+
+	static constexpr Genode::size_t NR_OF_CPUS = 4;
 };
 
 #endif /* _SRC__INCLUDE__HW__SPEC__ARM__RPI3__BOARD_H_ */
