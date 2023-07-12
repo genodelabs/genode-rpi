@@ -1,0 +1,367 @@
+commit 844076104395fe052f846b451f8b3cb921098516
+Author: Stefan Kalkowski <stefan.kalkowski@genode-labs.com>
+Date:   Wed Jul 12 15:06:21 2023 +0200
+
+    Clear TT buffers in error situations
+    
+    Based on the 'dwc2' driver implementation.
+
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_hcd.c b/drivers/usb/host/dwc_otg/dwc_otg_hcd.c
+index 783f1305e..dbd683f5e 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_hcd.c
++++ b/drivers/usb/host/dwc_otg/dwc_otg_hcd.c
+@@ -215,6 +215,32 @@ static void kill_urbs_in_qh_list(dwc_otg_hcd_t * hcd, dwc_list_link_t * qh_list)
+ 			} else {
+ 				dwc_otg_hc_halt(hcd->core_if, qh->channel,
+ 						DWC_OTG_HC_XFER_URB_DEQUEUE);
++				dwc_hc_t *hc = qh->channel;
++				if (!hc->xfer_started) {
++					/* copied from 'release_channel()' */
++					dwc_otg_hc_cleanup(hcd->core_if, hc);
++					DWC_CIRCLEQ_INSERT_TAIL(&hcd->free_hc_list, hc, hc_list_entry);
++					if (!microframe_schedule) {
++						switch (hc->ep_type) {
++						case DWC_OTG_EP_TYPE_CONTROL:
++						case DWC_OTG_EP_TYPE_BULK:
++							hcd->non_periodic_channels--;
++							break;
++
++						default:
++							/*
++							 * Don't release reservations for periodic channels here.
++							 * That's done when a periodic transfer is descheduled (i.e.
++							 * when the QH is removed from the periodic schedule).
++							 */
++							break;
++						}
++					} else {
++						hcd->available_host_channels++;
++						fiq_print(FIQDBG_INT, hcd->fiq_state, "AHC = %d ", hcd->available_host_channels);
++					}
++				}
++
+ 			}
+ 			qh->channel = NULL;
+ 		}
+@@ -643,8 +669,60 @@ int dwc_otg_hcd_urb_dequeue(dwc_otg_hcd_t * hcd,
+ 			} else {
+ 				dwc_otg_hc_halt(hcd->core_if, qh->channel,
+ 						DWC_OTG_HC_XFER_URB_DEQUEUE);
++
++				dwc_hc_t *hc = qh->channel;
++
++				if (hc->do_split) {
++					/*
++					 * Ideally this would be done in
++					 * 'dwc_otg_hcd_handle_hc_n_intr()',
++					 * but then the urb is already gone.
++					 *
++					 * It can happen that the clearing has already
++					 * been requested by an interrupt handler,
++					 * so a check is needed.
++					 */
++					if (!qh->tt_buffer_dirty) {
++						qh->tt_buffer_dirty = 1;
++						usb_hub_clear_tt_buffer(urb_qtd->urb->priv);
++					}
++				}
++
++				if (!hc->xfer_started) {
++					/* copied from 'release_channel()' */
++					dwc_otg_hc_cleanup(hcd->core_if, hc);
++					DWC_CIRCLEQ_INSERT_TAIL(&hcd->free_hc_list, hc, hc_list_entry);
++					if (!microframe_schedule) {
++						switch (hc->ep_type) {
++						case DWC_OTG_EP_TYPE_CONTROL:
++						case DWC_OTG_EP_TYPE_BULK:
++							hcd->non_periodic_channels--;
++							break;
++
++						default:
++							/*
++							 * Don't release reservations for periodic channels here.
++							 * That's done when a periodic transfer is descheduled (i.e.
++							 * when the QH is removed from the periodic schedule).
++							 */
++							break;
++						}
++					} else {
++						hcd->available_host_channels++;
++						fiq_print(FIQDBG_INT, hcd->fiq_state, "AHC = %d ", hcd->available_host_channels);
++					}
++				}
+ 			}
+ 		}
++	} else if (urb_qtd->in_process &&
++	           hcd->flags.b.port_connect_status &&
++	           urb_qtd->complete_split) {
++		/*
++		 * State between start-split and complete-split and no channel
++		 * assigned yet.
++		 */
++		qh->tt_buffer_dirty = 1;
++		usb_hub_clear_tt_buffer(urb_qtd->urb->priv);
+ 	}
+ 
+ 	/*
+@@ -2346,6 +2424,12 @@ static void process_periodic_channels(dwc_otg_hcd_t * hcd)
+ 				fiq_fsm_queue_isoc_transaction(hcd, qh);
+ 		} else {
+ 
++			/* Make sure EP's TT buffer is clean before queueing qtds */
++			if (qh->tt_buffer_dirty) {
++				qh_ptr = qh_ptr->next;
++				continue;
++			}
++
+ 			/*
+ 			 * Set a flag if we're queueing high-bandwidth in slave mode.
+ 			 * The flag prevents any halts to get into the request queue in
+@@ -2476,6 +2560,10 @@ static void process_non_periodic_channels(dwc_otg_hcd_t * hcd)
+ 		qh = DWC_LIST_ENTRY(hcd->non_periodic_qh_ptr, dwc_otg_qh_t,
+ 				    qh_list_entry);
+ 
++		/* Make sure EP's TT buffer is clean before queueing qtds */
++		if (qh->tt_buffer_dirty)
++			goto next;
++
+ 		if(fiq_fsm_enable && fiq_fsm_transaction_suitable(hcd, qh)) {
+ 			fiq_fsm_queue_split_transaction(hcd, qh);
+ 		} else {
+@@ -2489,6 +2577,7 @@ static void process_non_periodic_channels(dwc_otg_hcd_t * hcd)
+ 				break;
+ 			}
+ 		}
++next:
+ 		/* Advance to next QH, skipping start-of-list entry. */
+ 		hcd->non_periodic_qh_ptr = hcd->non_periodic_qh_ptr->next;
+ 		if (hcd->non_periodic_qh_ptr == &hcd->non_periodic_sched_active) {
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_hcd.h b/drivers/usb/host/dwc_otg/dwc_otg_hcd.h
+index 0aea10408..0cc14f3cd 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_hcd.h
++++ b/drivers/usb/host/dwc_otg/dwc_otg_hcd.h
+@@ -34,6 +34,9 @@
+ #ifndef __DWC_HCD_H__
+ #define __DWC_HCD_H__
+ 
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++
+ #include "dwc_otg_os_dep.h"
+ #include "usb.h"
+ #include "dwc_otg_hcd_if.h"
+@@ -380,6 +383,8 @@ typedef struct dwc_otg_qh {
+ 	uint16_t frame_usecs[8];
+ 
+ 	uint32_t skip_count;
++
++	unsigned tt_buffer_dirty:1;
+ } dwc_otg_qh_t;
+ 
+ DWC_CIRCLEQ_HEAD(hc_list, dwc_hc);
+@@ -624,6 +629,24 @@ static inline struct device *dwc_otg_hcd_to_dev(struct dwc_otg_hcd *hcd)
+ 	return &hcd->otg_dev->os_dep.platformdev->dev;
+ }
+ 
++struct wrapper_priv_data {
++       dwc_otg_hcd_t *dwc_otg_hcd;
++};
++
++/** Gets the dwc_otg_hcd from a struct usb_hcd */
++static inline dwc_otg_hcd_t *hcd_to_dwc_otg_hcd(struct usb_hcd *hcd)
++{
++	struct wrapper_priv_data *p;
++	p = (struct wrapper_priv_data *)(hcd->hcd_priv);
++	return p->dwc_otg_hcd;
++}
++
++/** Gets the struct usb_hcd that contains a dwc_otg_hcd_t. */
++static inline struct usb_hcd *dwc_otg_hcd_to_hcd(dwc_otg_hcd_t * dwc_otg_hcd)
++{
++	return dwc_otg_hcd_get_priv_data(dwc_otg_hcd);
++}
++
+ /** @name Transaction Execution Functions */
+ /** @{ */
+ extern dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c b/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
+index 099d2da63..a2a09fdfe 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
++++ b/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
+@@ -36,6 +36,9 @@
+ #include "dwc_otg_regs.h"
+ 
+ #include <linux/jiffies.h>
++#include <linux/usb.h>
++#include <linux/usb/hcd.h>
++
+ #ifdef CONFIG_ARM
+ #include <asm/fiq.h>
+ #endif
+@@ -294,6 +297,44 @@ static inline void track_missed_sofs(uint16_t curr_frame_number)
+ }
+ #endif
+ 
++static void dwc_otg_hcd_handle_tt_clear(dwc_otg_hcd_t *hcd,
++										dwc_hc_t *hc,
++										dwc_otg_qtd_t *qtd)
++{
++	struct usb_device *root_hub = dwc_otg_hcd_to_hcd(hcd)->self.root_hub;
++	struct urb *usb_urb;
++
++	if (!hc->qh)
++		return;
++
++	if (hc->qh->dev_speed == USB_SPEED_HIGH)
++		return;
++
++	if (!qtd->urb)
++		return;
++
++	usb_urb = qtd->urb->priv;
++	if (!usb_urb || !usb_urb->dev || !usb_urb->dev->tt)
++		return;
++
++	/*
++	 * The root hub doesn't really have a TT, but Linux thinks it
++	 * does because how could you have a "high speed hub" that
++	 * directly talks directly to low speed devices without a TT?
++	 * It's all lies.  Lies, I tell you.
++	 */
++	if (usb_urb->dev->tt->hub == root_hub)
++		return;
++
++	if (qtd->urb->status != -EPIPE && qtd->urb->status != -EREMOTEIO) {
++		hc->qh->tt_buffer_dirty = 1;
++		if (usb_hub_clear_tt_buffer(usb_urb))
++			/* Clear failed; let's hope things work anyway */
++			hc->qh->tt_buffer_dirty = 0;
++	}
++}
++
++
+ /**
+  * Handles the start-of-frame interrupt in host mode. Non-periodic
+  * transactions may be queued to the DWC_otg controller for the current
+@@ -1394,6 +1435,8 @@ static int32_t handle_hc_stall_intr(dwc_otg_hcd_t * hcd,
+ 	DWC_DEBUGPL(DBG_HCD, "--Host Channel %d Interrupt: "
+ 		    "STALL Received--\n", hc->hc_num);
+ 
++	dwc_otg_hcd_handle_tt_clear(hcd, hc, qtd);
++
+ 	if (hcd->core_if->dma_desc_enable) {
+ 		dwc_otg_hcd_complete_xfer_ddma(hcd, hc, hc_regs, DWC_OTG_HC_XFER_STALL);
+ 		goto handle_stall_done;
+@@ -1794,6 +1837,8 @@ static int32_t handle_hc_babble_intr(dwc_otg_hcd_t * hcd,
+ 	DWC_DEBUGPL(DBG_HCDI, "--Host Channel %d Interrupt: "
+ 		    "Babble Error--\n", hc->hc_num);
+ 
++	dwc_otg_hcd_handle_tt_clear(hcd, hc, qtd);
++
+ 	if (hcd->core_if->dma_desc_enable) {
+ 		dwc_otg_hcd_complete_xfer_ddma(hcd, hc, hc_regs,
+ 					       DWC_OTG_HC_XFER_BABBLE_ERR);
+@@ -1836,6 +1881,8 @@ static int32_t handle_hc_ahberr_intr(dwc_otg_hcd_t * hcd,
+ 	DWC_DEBUGPL(DBG_HCDI, "--Host Channel %d Interrupt: "
+ 		    "AHB Error--\n", hc->hc_num);
+ 
++	dwc_otg_hcd_handle_tt_clear(hcd, hc, qtd);
++
+ 	hcchar.d32 = DWC_READ_REG32(&hc_regs->hcchar);
+ 	hcsplt.d32 = DWC_READ_REG32(&hc_regs->hcsplt);
+ 	hctsiz.d32 = DWC_READ_REG32(&hc_regs->hctsiz);
+@@ -1928,6 +1975,8 @@ static int32_t handle_hc_xacterr_intr(dwc_otg_hcd_t * hcd,
+ 	DWC_DEBUGPL(DBG_HCDI, "--Host Channel %d Interrupt: "
+ 		    "Transaction Error--\n", hc->hc_num);
+ 
++	dwc_otg_hcd_handle_tt_clear(hcd, hc, qtd);
++
+ 	if (hcd->core_if->dma_desc_enable) {
+ 		dwc_otg_hcd_complete_xfer_ddma(hcd, hc, hc_regs,
+ 					       DWC_OTG_HC_XFER_XACT_ERR);
+@@ -1991,6 +2040,8 @@ static int32_t handle_hc_frmovrun_intr(dwc_otg_hcd_t * hcd,
+ 	DWC_DEBUGPL(DBG_HCDI, "--Host Channel %d Interrupt: "
+ 		    "Frame Overrun--\n", hc->hc_num);
+ 
++	dwc_otg_hcd_handle_tt_clear(hcd, hc, qtd);
++
+ 	switch (dwc_otg_hcd_get_pipe_type(&qtd->urb->pipe_info)) {
+ 	case UE_CONTROL:
+ 	case UE_BULK:
+@@ -2028,6 +2079,8 @@ static int32_t handle_hc_datatglerr_intr(dwc_otg_hcd_t * hcd,
+ 		"Data Toggle Error on %s transfer--\n",
+ 		hc->hc_num, (hc->ep_is_in ? "IN" : "OUT"));
+ 
++	dwc_otg_hcd_handle_tt_clear(hcd, hc, qtd);
++
+ 	/* Data toggles on split transactions cause the hc to halt.
+ 	 * restart transfer */
+ 	if(hc->qh->do_split)
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c b/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c
+index ca646860a..425d2c051 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c
++++ b/drivers/usb/host/dwc_otg/dwc_otg_hcd_linux.c
+@@ -124,9 +124,8 @@ extern int hub_control(struct usb_hcd *hcd,
+ 		       u16 typeReq,
+ 		       u16 wValue, u16 wIndex, char *buf, u16 wLength);
+ 
+-struct wrapper_priv_data {
+-	dwc_otg_hcd_t *dwc_otg_hcd;
+-};
++static void dwc_otg_hcd_clear_tt_buffer_complete(struct usb_hcd *hcd,
++												 struct usb_host_endpoint *ep);
+ 
+ /** @} */
+ 
+@@ -156,24 +155,11 @@ static struct hc_driver dwc_otg_hc_driver = {
+ 
+ 	.hub_status_data = hub_status_data,
+ 	.hub_control = hub_control,
++	.clear_tt_buffer_complete = dwc_otg_hcd_clear_tt_buffer_complete,
+ 	//.bus_suspend =
+ 	//.bus_resume =
+ };
+ 
+-/** Gets the dwc_otg_hcd from a struct usb_hcd */
+-static inline dwc_otg_hcd_t *hcd_to_dwc_otg_hcd(struct usb_hcd *hcd)
+-{
+-	struct wrapper_priv_data *p;
+-	p = (struct wrapper_priv_data *)(hcd->hcd_priv);
+-	return p->dwc_otg_hcd;
+-}
+-
+-/** Gets the struct usb_hcd that contains a dwc_otg_hcd_t. */
+-static inline struct usb_hcd *dwc_otg_hcd_to_hcd(dwc_otg_hcd_t * dwc_otg_hcd)
+-{
+-	return dwc_otg_hcd_get_priv_data(dwc_otg_hcd);
+-}
+-
+ /** Gets the usb_host_endpoint associated with an URB. */
+ inline struct usb_host_endpoint *dwc_urb_to_endpoint(struct urb *urb)
+ {
+@@ -1081,4 +1067,25 @@ int hub_control(struct usb_hcd *hcd,
+ 	return retval;
+ }
+ 
++/* Handles hub TT buffer clear completions */
++static void dwc_otg_hcd_clear_tt_buffer_complete(struct usb_hcd *hcd,
++												 struct usb_host_endpoint *ep)
++{
++	dwc_otg_hcd_t *dwc_hcd = hcd_to_dwc_otg_hcd(hcd);
++	dwc_otg_qh_t *qh;
++	unsigned long flags;
++
++	qh = ep->hcpriv;
++	if (!qh)
++		return;
++
++	DWC_SPINLOCK_IRQSAVE(dwc_hcd->lock, &flags);
++	qh->tt_buffer_dirty = 0;
++
++	if (dwc_hcd->flags.b.port_connect_status)
++		dwc_otg_hcd_queue_transactions(dwc_hcd, DWC_OTG_TRANSACTION_ALL);
++
++	DWC_SPINUNLOCK_IRQRESTORE(dwc_hcd->lock, flags);
++}
++
+ #endif /* DWC_DEVICE_ONLY */

@@ -1,0 +1,193 @@
+commit 539e54a5cd75a8ac289040bad5c6fb78e1424a45
+Author: Stefan Kalkowski <stefan.kalkowski@genode-labs.com>
+Date:   Tue Jul 11 13:58:01 2023 +0200
+
+    SOF IRQ scheduling mechanism for Genode (base-hw)
+
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_hcd.c b/drivers/usb/host/dwc_otg/dwc_otg_hcd.c
+index e42d8ca89..783f1305e 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_hcd.c
++++ b/drivers/usb/host/dwc_otg/dwc_otg_hcd.c
+@@ -47,6 +47,8 @@
+ #include "dwc_otg_regs.h"
+ #include "dwc_otg_fiq_fsm.h"
+ 
++#include "sof_trigger.h"
++
+ extern bool microframe_schedule;
+ extern uint16_t fiq_fsm_mask, nak_holdoff;
+ 
+@@ -2142,9 +2144,10 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
+ 				uint16_t next_frame = dwc_frame_num_inc(qh->nak_frame, (qh->ep_type == UE_BULK) ? nak_holdoff : 8);
+ 				uint16_t frame = dwc_otg_hcd_get_frame_number(hcd);
+ 				if (dwc_frame_num_le(frame, next_frame)) {
+-					if(dwc_frame_num_le(next_frame, hcd->fiq_state->next_sched_frame)) {
+-						hcd->fiq_state->next_sched_frame = next_frame;
++					if(dwc_frame_num_le(next_frame, scheduled_sof_frame(hcd))) {
++						schedule_sof_interrupt(hcd, next_frame);
+ 					}
++
+ 					qh_ptr = DWC_LIST_NEXT(qh_ptr);
+ 					continue;
+ 				} else {
+@@ -2182,7 +2185,7 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
+ 	 */
+ 	if (fiq_enable) {
+ 		if (DWC_LIST_EMPTY(&hcd->non_periodic_sched_inactive)) {
+-			hcd->fiq_state->kick_np_queues = 0;
++			kick_sof_interrupt(hcd, 0);
+ 		} else {
+ 			/* For each entry remaining in the NP inactive queue,
+ 			* if this a NAK'd retransmit then don't set the kick flag.
+@@ -2191,12 +2194,13 @@ dwc_otg_transaction_type_e dwc_otg_hcd_select_transactions(dwc_otg_hcd_t * hcd)
+ 				DWC_LIST_FOREACH(qh_ptr, &hcd->non_periodic_sched_inactive) {
+ 					qh = DWC_LIST_ENTRY(qh_ptr, dwc_otg_qh_t, qh_list_entry);
+ 					if (qh->nak_frame == 0xFFFF) {
+-						hcd->fiq_state->kick_np_queues = 1;
++						kick_sof_interrupt(hcd, 1);
+ 					}
+ 				}
+ 			}
+ 		}
+ 	}
++
+ 	if(!DWC_LIST_EMPTY(&hcd->periodic_sched_assigned))
+ 		ret_val |= DWC_OTG_TRANSACTION_PERIODIC;
+ 
+@@ -2331,7 +2335,7 @@ static void process_periodic_channels(dwc_otg_hcd_t * hcd)
+ 		if(fiq_fsm_enable && qh->do_split && ((dwc_otg_hcd_get_frame_number(hcd) + 1) & 7) > 6)
+ 		{
+ 			qh_ptr = qh_ptr->next;
+-			hcd->fiq_state->next_sched_frame = dwc_otg_hcd_get_frame_number(hcd) | 7;
++			schedule_sof_interrupt(hcd, dwc_otg_hcd_get_frame_number(hcd) | 7);
+ 			continue;
+ 		}
+ 
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c b/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
+index 9d49b2b33..c605419bd 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
++++ b/drivers/usb/host/dwc_otg/dwc_otg_hcd_intr.c
+@@ -40,6 +40,8 @@
+ #include <asm/fiq.h>
+ #endif
+ 
++#include "sof_trigger.h"
++
+ extern bool microframe_schedule;
+ 
+ /** @file
+@@ -349,7 +351,7 @@ int32_t dwc_otg_hcd_handle_sof_intr(dwc_otg_hcd_t * hcd)
+ 		}
+ 	}
+ 	if (fiq_enable)
+-		hcd->fiq_state->next_sched_frame = next_sched_frame;
++		schedule_sof_interrupt(hcd, next_sched_frame);
+ 
+ 	tr_type = dwc_otg_hcd_select_transactions(hcd);
+ 	if (tr_type != DWC_OTG_TRANSACTION_NONE) {
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_hcd_queue.c b/drivers/usb/host/dwc_otg/dwc_otg_hcd_queue.c
+index f51fad1e6..bfa8d44a5 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_hcd_queue.c
++++ b/drivers/usb/host/dwc_otg/dwc_otg_hcd_queue.c
+@@ -42,6 +42,8 @@
+ #include "dwc_otg_hcd.h"
+ #include "dwc_otg_regs.h"
+ 
++#include "sof_trigger.h"
++
+ extern bool microframe_schedule;
+ extern unsigned short int_ep_interval_min;
+ 
+@@ -644,11 +646,11 @@ static int schedule_periodic(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh)
+ 		DWC_LIST_INSERT_TAIL(&hcd->periodic_sched_ready, &qh->qh_list_entry);
+ 	}
+ 	else {
+-		if(fiq_enable && (DWC_LIST_EMPTY(&hcd->periodic_sched_inactive) || dwc_frame_num_le(qh->sched_frame, hcd->fiq_state->next_sched_frame)))
++		if(fiq_enable && (DWC_LIST_EMPTY(&hcd->periodic_sched_inactive) || dwc_frame_num_le(qh->sched_frame, scheduled_sof_frame(hcd))))
+ 		{
+-			hcd->fiq_state->next_sched_frame = qh->sched_frame;
+-
++			schedule_sof_interrupt(hcd, qh->sched_frame);
+ 		}
++
+ 		/* Always start in the inactive schedule. */
+ 		DWC_LIST_INSERT_TAIL(&hcd->periodic_sched_inactive, &qh->qh_list_entry);
+ 	}
+@@ -862,9 +864,9 @@ void dwc_otg_hcd_qh_deactivate(dwc_otg_hcd_t * hcd, dwc_otg_qh_t * qh,
+ 				DWC_LIST_MOVE_HEAD(&hcd->periodic_sched_ready,
+ 						   &qh->qh_list_entry);
+ 			} else {
+-				if(fiq_enable && !dwc_frame_num_le(hcd->fiq_state->next_sched_frame, qh->sched_frame))
++				if(fiq_enable && !dwc_frame_num_le(scheduled_sof_frame(hcd), qh->sched_frame))
+ 				{
+-					hcd->fiq_state->next_sched_frame = qh->sched_frame;
++					schedule_sof_interrupt(hcd, qh->sched_frame);
+ 				}
+ 
+ 				DWC_LIST_MOVE_HEAD
+@@ -957,7 +959,7 @@ int dwc_otg_hcd_qtd_add(dwc_otg_qtd_t * qtd,
+ 			goto done;
+ 		} else {
+ 			if (fiq_enable)
+-				hcd->fiq_state->kick_np_queues = 1;
++				kick_sof_interrupt(hcd, 1);
+ 		}
+ 	}
+ 	retval = dwc_otg_hcd_qh_add(hcd, *qh);
+diff --git a/drivers/usb/host/dwc_otg/sof_trigger.h b/drivers/usb/host/dwc_otg/sof_trigger.h
+new file mode 100644
+index 000000000..88ab4f897
+--- /dev/null
++++ b/drivers/usb/host/dwc_otg/sof_trigger.h
+@@ -0,0 +1,51 @@
++#ifndef _SOF_TRIGGER_H_
++#define _SOF_TRIGGER_H_
++
++#include <dwc_otg_hcd_if.h>
++
++
++static inline void schedule_sof_interrupt(dwc_otg_hcd_t *hcd, int frame)
++{
++#ifndef DWC_GENODE
++	hcd->fiq_state->next_sched_frame = frame;
++#else
++	enum { NUM_VALID = 1 << 31, NUM_MASK = 0x3fff };
++
++	uint32_t v = DWC_READ_REG32(&hcd->core_if->core_global_regs->guid);
++
++	v &= ~(NUM_MASK | NUM_VALID);
++
++	DWC_WRITE_REG32(&hcd->core_if->core_global_regs->guid,
++	                v | (frame & NUM_MASK) | NUM_VALID);
++#endif
++}
++
++
++static inline uint16_t scheduled_sof_frame(dwc_otg_hcd_t *hcd)
++{
++#ifndef DWC_GENODE
++	return hcd->fiq_state->next_sched_frame;
++#else
++	enum { NUM_MASK = 0x3fff };
++	return DWC_READ_REG32(&hcd->core_if->core_global_regs->guid) & NUM_MASK;
++#endif
++}
++
++
++static inline void kick_sof_interrupt(dwc_otg_hcd_t *hcd, int kick)
++{
++#ifndef DWC_GENODE
++	hcd->fiq_state->kick_np_queues = kick;
++#else
++	enum { KICK = 1 << 30 };
++
++	uint32_t v = DWC_READ_REG32(&hcd->core_if->core_global_regs->guid);
++
++	v &= ~KICK;
++
++	DWC_WRITE_REG32(&hcd->core_if->core_global_regs->guid,
++	                v | (kick ? KICK : 0));
++#endif
++}
++
++#endif /* _SOF_TRIGGER_H_ */

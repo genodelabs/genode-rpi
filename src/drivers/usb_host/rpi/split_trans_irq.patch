@@ -1,0 +1,32 @@
+commit 81933c99f1cf73707e84d30f854a7795b615717e
+Author: Stefan Kalkowski <stefan.kalkowski@genode-labs.com>
+Date:   Wed Jul 12 14:24:14 2023 +0200
+
+    Use split interrupt transaction hack on Genode
+    
+    See 'fiq_fsm_queue_split_transaction()' for the original
+    Linux implementation.
+
+diff --git a/drivers/usb/host/dwc_otg/dwc_otg_cil.c b/drivers/usb/host/dwc_otg/dwc_otg_cil.c
+index 14300ad0f..7a3838a36 100644
+--- a/drivers/usb/host/dwc_otg/dwc_otg_cil.c
++++ b/drivers/usb/host/dwc_otg/dwc_otg_cil.c
+@@ -2360,9 +2360,17 @@ void dwc_otg_hc_init(dwc_otg_core_if_t * core_if, dwc_hc_t * hc)
+ 	hcchar.b.epnum = hc->ep_num;
+ 	hcchar.b.epdir = hc->ep_is_in;
+ 	hcchar.b.lspddev = (hc->speed == DWC_OTG_EP_SPEED_LOW);
+-	hcchar.b.eptype = hc->ep_type;
+ 	hcchar.b.mps = hc->max_packet;
+ 
++	/* Hack courtesy of FreeBSD: apparently forcing Interrupt Split transactions
++	 * as Control puts the transfer into the non-periodic request queue and the
++	 * non-periodic handler in the hub. Makes things lots easier.
++	 */
++	if (hc->do_split && (hc->ep_type == DWC_OTG_EP_TYPE_INTR))
++	        hcchar.b.eptype = DWC_OTG_EP_TYPE_CONTROL;
++	else
++	        hcchar.b.eptype = hc->ep_type;
++
+ 	DWC_WRITE_REG32(&host_if->hc_regs[hc_num]->hcchar, hcchar.d32);
+ 
+ 	DWC_DEBUGPL(DBG_HCDV, "%s: Channel %d, Dev Addr %d, EP #%d\n",

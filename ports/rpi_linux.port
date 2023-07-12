@@ -1,0 +1,23 @@
+LICENSE   := GPLv2
+VERSION   := 6.1.37
+DOWNLOADS := rpi_linux.archive
+
+URL(rpi_linux)  := https://github.com/raspberrypi/linux/tarball/bb592ec
+NAME(rpi_linux) := rpi_linux_6.1.37.tgz
+SHA(rpi_linux)  := 7cd2cde79ae998dd35db10e0fd3fe087b86f475d80fe53b53677c2dbaed4fc69
+DIR(rpi_linux)  := src/linux
+
+#
+# Patches
+#
+PATCHES += src/drivers/usb_host/rpi/sof_irq_genode.patch
+PATCHES += src/drivers/usb_host/rpi/fiq_fsm_disable.patch
+PATCHES += src/drivers/usb_host/rpi/nyet_error_genode.patch
+PATCHES += src/drivers/usb_host/rpi/split_trans_irq.patch
+PATCHES += src/drivers/usb_host/rpi/clear_tt_buffers.patch
+
+PATCH_OPT(src/drivers/usb_host/rpi/sof_irq_genode.patch)    := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/drivers/usb_host/rpi/fiq_fsm_disable.patch)   := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/drivers/usb_host/rpi/nyet_error_genode.patch) := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/drivers/usb_host/rpi/split_trans_irq.patch)   := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/drivers/usb_host/rpi/clear_tt_buffers.patch)  := -p1 -d${DIR(rpi_linux)}
