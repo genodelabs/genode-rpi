@@ -5,6 +5,7 @@
 
 	<device name="dwc_otg" type="brcm,bcm2835-usb">
 		<io_mem       address="0x20980000" size="0x10000"/>
+		<io_mem       address="0x20006000" size="0x1000"/>
 		<irq          number="9"/>
 		<power-domain name="usb"/>
 	</device>

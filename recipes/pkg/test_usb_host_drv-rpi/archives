@@ -1,4 +1,4 @@
 _/raw/test_usb_host_drv-rpi
 _/raw/rpi-devices
-_/src/legacy_usb_host_drv
+_/src/rpi_usb_host_drv
 _/src/rpi_platform_drv
