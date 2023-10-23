@@ -626,14 +626,6 @@ void * kmem_cache_alloc_lru(struct kmem_cache * s,struct list_lru * lru,gfp_t gf
 }
 
 
-#include <linux/slab.h>
-
-void kmem_cache_destroy(struct kmem_cache * s)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
 #include <linux/kmsg_dump.h>
 
 void kmsg_dump(enum kmsg_dump_reason reason)
