@@ -23,6 +23,17 @@ using namespace Kernel;
 using Device = Board::Timer;
 
 
+Genode::uint64_t Board::Timer::_counter() const
+{
+	uint64_t const high = read<Device::Cnt_high>();
+	uint64_t const low  = read<Device::Cnt_low>();
+
+	/* if higher counter value changed in between, re-read everything */
+	return (high == (time_t)read<Device::Cnt_high>())
+		? (high << 32U) | low : _counter();
+}
+
+
 Board::Timer::Timer(unsigned)
 :
 	Mmio(Platform::mmio_to_virt(Board::SYSTEM_TIMER_MMIO_BASE))
@@ -32,10 +43,11 @@ Board::Timer::Timer(unsigned)
 void Timer::_start_one_shot(time_t const ticks)
 {
 	/* ticks is guaranteed to be less than _max_value() resp. 4-byte */
-	Device::Clo::access_t off = (Device::Clo::access_t) (ticks < 2 ? 2 : ticks);
-	_device.write<Device::Cs::M1>(1);
-	_device.read<Device::Cs>();
-	_device.write<Device::Cmp>(_device.read<Device::Clo>() + off);
+	Device::Cnt_low::access_t off = (Device::Cnt_low::access_t)
+		(ticks < 2 ? 2 : ticks);
+	_device.write<Device::Cnt_ctrl_status::Irq_1>(1);
+	_device.read<Device::Cnt_ctrl_status>();
+	_device.write<Device::Cnt_compare_1>(_device.read<Device::Cnt_low>() + off);
 }
 
 
@@ -54,15 +66,7 @@ time_t Timer::_max_value() const {
 	return 0xffffffff; }
 
 
-time_t Timer::_duration() const
-{
-	Device::Clo::access_t const clo = _device.read<Device::Clo>();
-	Device::Cmp::access_t const cmp = _device.read<Device::Cmp>();
-	Device::Cs::access_t  const irq = _device.read<Device::Cs::M1>();
-	time_t d = (irq) ? _last_timeout_duration + (clo - cmp)
-	                 : clo - (cmp - _last_timeout_duration);
-	return d;
-}
+time_t Timer::_duration() const { return _device._counter() - _time; }
 
 
 unsigned Timer::interrupt_id() const { return Board::SYSTEM_TIMER_IRQ; }

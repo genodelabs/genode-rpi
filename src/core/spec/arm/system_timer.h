@@ -27,9 +27,16 @@ namespace Board { class Timer; }
  */
 struct Board::Timer : Genode::Mmio
 {
-	struct Cs  : Register<0x0, 32> { struct M1 : Bitfield<1, 1> { }; };
-	struct Clo : Register<0x4,  32> { };
-	struct Cmp : Register<0x10, 32> { };
+	struct Cnt_ctrl_status : Register<0x0, 32>
+	{
+		struct Irq_1 : Bitfield<1, 1> { };
+	};
+	struct Cnt_low       : Register<0x4,  32> { };
+	struct Cnt_high      : Register<0x8,  32> { };
+	struct Cnt_compare_1 : Register<0x10, 32> { };
+
+	/* Returns 64-bit counter value out of both 32-bit registers */
+	Genode::uint64_t _counter() const;
 
 	Timer(unsigned);
 
