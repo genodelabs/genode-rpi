@@ -55,6 +55,6 @@ install_config {
 
 </config>}
 
-build_boot_image { event_dump test-framebuffer }
+build_boot_image [build_artifacts]
 
 run_genode_until forever
