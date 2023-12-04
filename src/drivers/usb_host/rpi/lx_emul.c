@@ -46,15 +46,6 @@ void dma_pool_free(struct dma_pool * pool,void * vaddr,dma_addr_t dma)
 }
 
 
-#include <linux/cdev.h>
-#include <lx_emul/usb.h>
-
-void cdev_init(struct cdev * cdev, const struct file_operations * fops)
-{
-	lx_emul_usb_register_devio(fops);
-}
-
-
 #include <asm/uaccess.h>
 
 unsigned long arm_copy_from_user(void *to, const void *from, unsigned long n)
