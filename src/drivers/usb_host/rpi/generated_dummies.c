@@ -322,14 +322,6 @@ int dma_mmap_attrs(struct device * dev,struct vm_area_struct * vma,void * cpu_ad
 }
 
 
-#include <linux/dmapool.h>
-
-void dma_pool_destroy(struct dma_pool * pool)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
 #include <linux/dma-mapping.h>
 
 void * dmam_alloc_attrs(struct device * dev,size_t size,dma_addr_t * dma_handle,gfp_t gfp,unsigned long attrs)

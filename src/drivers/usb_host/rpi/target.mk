@@ -7,6 +7,7 @@ SRC_CC   += main.cc
 SRC_C    += dummies.c
 SRC_C    += lx_emul.c
 SRC_C    += lx_emul/shadow/drivers/char/random.c
+SRC_C    += lx_emul/shadow/mm/dmapool.c
 SRC_CC   += lx_emul/shared_dma_buffer.cc
 SRC_CC   += lx_emul/random.cc
 SRC_C    += lx_emul/usb.c
