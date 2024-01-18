@@ -23,7 +23,7 @@ namespace Genode { class Bcm2835_mini_uart; }
 /**
  * Driver base for the PrimeCell UART MINI Revision r1p3
  */
-class Genode::Bcm2835_mini_uart : Mmio
+class Genode::Bcm2835_mini_uart : Mmio<0x68 + 4>
 {
 	protected:
 
@@ -222,7 +222,7 @@ class Genode::Bcm2835_mini_uart : Mmio
 Genode::Bcm2835_mini_uart::Bcm2835_mini_uart(addr_t const base,
                                              uint32_t const clock,
                                              uint32_t const baud_rate)
-: Mmio(base)
+: Mmio({(char *)base, Mmio::SIZE})
 {
 	/* enable UART1, AUX mini uart */
 	write<AuxEnables>(read<AuxEnables::MiniUartEnable>() |

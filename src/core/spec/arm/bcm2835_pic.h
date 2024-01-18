@@ -40,7 +40,7 @@ class Board::Global_interrupt_controller
 };
 
 
-class Board::Bcm2835_pic : Genode::Mmio
+class Board::Bcm2835_pic : Genode::Mmio<0x28>
 {
 	public:
 
@@ -71,7 +71,7 @@ class Board::Bcm2835_pic : Genode::Mmio
 		struct Irq_disable_gpu_2  : Register<0x20, 32> { };
 		struct Irq_disable_basic  : Register<0x24, 32> { };
 
-		class Usb_dwc_otg : Genode::Mmio
+		class Usb_dwc_otg : Genode::Mmio<0x40c>
 		{
 			private:
 
@@ -137,7 +137,7 @@ class Board::Bcm2835_pic : Genode::Mmio
 	public:
 
 		Bcm2835_pic(Global_interrupt_controller &global_irq_ctrl,
-		            Genode::addr_t irq_ctrl_base = 0);
+		            Genode::Byte_range_ptr const &irq_ctrl = {nullptr, 0});
 
 		bool take_request(unsigned &irq);
 		void finish_request() { }

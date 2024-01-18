@@ -25,7 +25,7 @@ namespace Board { class Timer; }
  *
  * Timer channel 0 apparently doesn't work on the RPI, so we use channel 1
  */
-struct Board::Timer : Genode::Mmio
+struct Board::Timer : Genode::Mmio<0x14>
 {
 	struct Cnt_ctrl_status : Register<0x0, 32>
 	{

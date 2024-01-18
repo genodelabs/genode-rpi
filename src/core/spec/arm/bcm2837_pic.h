@@ -25,7 +25,7 @@ namespace Board {
 }
 
 
-class Board::Bcm2837_pic : Genode::Mmio
+class Board::Bcm2837_pic : Genode::Mmio<0xc0 + 3 * 0x10 + 4>
 {
 	public:
 

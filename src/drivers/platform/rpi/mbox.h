@@ -25,7 +25,7 @@
 #include <timer_session/connection.h>
 #include <platform_session/device.h>
 
-class Mbox : Genode::Attached_mmio
+class Mbox : Genode::Attached_mmio<0xbc>
 {
 	private:
 
@@ -91,7 +91,7 @@ class Mbox : Genode::Attached_mmio
 		using Range = Platform::Device_interface::Range;
 
 		Mbox(Genode::Env &env, Range io_mem)
-		: Genode::Attached_mmio(env, io_mem.start, io_mem.size), _env(env) { }
+		: Attached_mmio(env, {(char *)io_mem.start, io_mem.size}), _env(env) { }
 
 		/**
 		 * Return reference to typed message buffer

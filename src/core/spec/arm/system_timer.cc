@@ -36,7 +36,7 @@ Genode::uint64_t Board::Timer::_counter() const
 
 Board::Timer::Timer(unsigned)
 :
-	Mmio(Platform::mmio_to_virt(Board::SYSTEM_TIMER_MMIO_BASE))
+	Mmio({(char *)Platform::mmio_to_virt(Board::SYSTEM_TIMER_MMIO_BASE), Board::SYSTEM_TIMER_MMIO_SIZE})
 { }
 
 
