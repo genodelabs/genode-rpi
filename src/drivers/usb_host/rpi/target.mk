@@ -1,4 +1,4 @@
-DRIVER   := rpi_usb_host_drv
+DRIVER   := rpi_usb_host
 TARGET   := $(DRIVER)
 REQUIRES := arm_v6
 LIBS      = base rpi_linux_generated rpi_lx_emul jitterentropy

@@ -86,7 +86,7 @@ struct Framebuffer::Main
 
 	Main(Genode::Env &env) : _env(env)
 	{
-		log("--- rpi_fb_drv started ---");
+		log("--- rpi_fb started ---");
 
 		_timer.sigh(_timer_handler);
 		_timer.trigger_periodic(10*1000);

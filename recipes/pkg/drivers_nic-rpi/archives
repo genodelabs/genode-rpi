@@ -1,5 +1,5 @@
-_/src/rpi_platform_drv
-_/src/rpi_usb_host_drv
-_/src/usb_net_drv
+_/src/rpi_platform
+_/src/rpi_usb_host
+_/src/usb_net
 _/raw/drivers_nic-rpi
 _/raw/rpi-devices
