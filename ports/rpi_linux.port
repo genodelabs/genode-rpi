@@ -10,14 +10,14 @@ DIR(rpi_linux)  := src/linux
 #
 # Patches
 #
-PATCHES += src/drivers/usb_host/rpi/sof_irq_genode.patch
-PATCHES += src/drivers/usb_host/rpi/fiq_fsm_disable.patch
-PATCHES += src/drivers/usb_host/rpi/nyet_error_genode.patch
-PATCHES += src/drivers/usb_host/rpi/split_trans_irq.patch
-PATCHES += src/drivers/usb_host/rpi/clear_tt_buffers.patch
+PATCHES += src/driver/usb_host/rpi/sof_irq_genode.patch
+PATCHES += src/driver/usb_host/rpi/fiq_fsm_disable.patch
+PATCHES += src/driver/usb_host/rpi/nyet_error_genode.patch
+PATCHES += src/driver/usb_host/rpi/split_trans_irq.patch
+PATCHES += src/driver/usb_host/rpi/clear_tt_buffers.patch
 
-PATCH_OPT(src/drivers/usb_host/rpi/sof_irq_genode.patch)    := -p1 -d${DIR(rpi_linux)}
-PATCH_OPT(src/drivers/usb_host/rpi/fiq_fsm_disable.patch)   := -p1 -d${DIR(rpi_linux)}
-PATCH_OPT(src/drivers/usb_host/rpi/nyet_error_genode.patch) := -p1 -d${DIR(rpi_linux)}
-PATCH_OPT(src/drivers/usb_host/rpi/split_trans_irq.patch)   := -p1 -d${DIR(rpi_linux)}
-PATCH_OPT(src/drivers/usb_host/rpi/clear_tt_buffers.patch)  := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/driver/usb_host/rpi/sof_irq_genode.patch)    := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/driver/usb_host/rpi/fiq_fsm_disable.patch)   := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/driver/usb_host/rpi/nyet_error_genode.patch) := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/driver/usb_host/rpi/split_trans_irq.patch)   := -p1 -d${DIR(rpi_linux)}
+PATCH_OPT(src/driver/usb_host/rpi/clear_tt_buffers.patch)  := -p1 -d${DIR(rpi_linux)}

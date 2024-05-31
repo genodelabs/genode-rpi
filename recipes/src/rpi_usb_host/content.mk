@@ -3,7 +3,7 @@
 #
 
 MIRROR_FROM_REP_DIR := src/include/spec/arm_v6/lx_emul \
-                       src/drivers/usb_host/rpi
+                       src/driver/usb_host/rpi
 
 #
 # Generic driver poritions from dde_linux and os
