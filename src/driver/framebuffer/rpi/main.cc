@@ -61,7 +61,7 @@ struct Framebuffer::Main
 
 	Area const _size { 1024, 768 };
 
-	Rpi_mbox::Framebuffer_info _fb_info { _size.w(), _size.h(), 32 };
+	Rpi_mbox::Framebuffer_info _fb_info { _size.w, _size.h, 32 };
 
 	bool const _fb_initialized = ( _rpi_mbox.setup_framebuffer(_fb_info), true );
 
