@@ -64,7 +64,7 @@ static void dde_irq_mask(struct irq_data *d)
 
 static void dde_irq_eoi(struct irq_data *d)
 {
-	lx_emul_irq_eoi(d->hwirq);
+	lx_emul_irq_ack(d->hwirq);
 }
 
 static struct irq_chip bcm_irq_chip = {
