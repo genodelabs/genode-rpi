@@ -70,7 +70,7 @@ struct Framebuffer::Main
 	Capture::Connection _capture { _env };
 
 	Capture::Connection::Screen _captured_screen {
-		_capture, _env.rm(), { .px = _size, .mm = { } } };
+		_capture, _env.rm(), { .px = _size, .mm = { }, .rotate = { }, .flip = { } } };
 
 	Timer::Connection _timer { _env };
 
