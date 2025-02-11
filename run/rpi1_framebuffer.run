@@ -22,33 +22,27 @@ install_config {
 	<default-route>
 		<any-service> <parent/> <any-child/> </any-service>
 	</default-route>
-	<default caps="100"/>
+	<default caps="100" ram="1M"/>
 
 	<start name="timer">
-		<resource name="RAM" quantum="1M"/>
 		<provides><service name="Timer"/></provides>
 	</start>
 
-	<start name="rpi_platform" caps="200" managing_system="true">
-		<resource name="RAM" quantum="2M"/>
+	<start name="rpi_platform" caps="200" ram="2M" managing_system="true">
 		<provides>
 			<service name="Platform"/>
 			<service name="Rpi_mbox"/>
 		</provides>
 	</start>
 
-	<start name="rpi_fb" caps="120">
-		<resource name="RAM" quantum="4M"/>
-	</start>
+	<start name="rpi_fb" caps="120" ram="4M"/>
 
 	<start name="event_dump">
-		<resource name="RAM" quantum="1M"/>
 		<provides> <service name="Event"/> </provides>
 		<config/>
 	</start>
 
-	<start name="test-framebuffer">
-		<resource name="RAM" quantum="10M"/>
+	<start name="test-framebuffer" ram="10M">
 		<provides> <service name="Capture"/> </provides>
 		<config/>
 	</start>
