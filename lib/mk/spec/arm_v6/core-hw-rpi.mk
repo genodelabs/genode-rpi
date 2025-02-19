@@ -12,7 +12,7 @@ REP_INC_DIR += src/core/spec/arm_v6
 
 # add C++ sources
 SRC_CC += kernel/cpu_up.cc
-SRC_CC += kernel/lock.cc
+SRC_CC += kernel/mutex.cc
 SRC_CC += kernel/vm_thread_off.cc
 SRC_CC += platform_services.cc
 SRC_CC += spec/arm/bcm2835_pic.cc
