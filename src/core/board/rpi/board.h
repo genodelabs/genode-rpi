@@ -22,6 +22,7 @@
 #include <spec/arm/bcm2835_pic.h>
 #include <spec/arm/system_timer.h>
 #include <spec/arm_v6/cpu.h>
+#include <no_vcpu_board.h>
 
 namespace Board {
 	using namespace Hw::Rpi_board;

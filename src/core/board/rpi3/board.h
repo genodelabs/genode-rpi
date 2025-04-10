@@ -21,6 +21,7 @@
 #include <spec/arm/bcm2837_pic.h>
 #include <spec/arm/generic_timer.h>
 #include <spec/arm_v8/cpu.h>
+#include <no_vcpu_board.h>
 
 namespace Board {
 
