@@ -88,8 +88,8 @@ class Rpi_mbox::Root :
 
 	protected:
 
-		Session_component *_create_session(const char *) override {
-			return new (md_alloc()) Session_component(_mbox); }
+		Create_result _create_session(const char *) override {
+			return *new (md_alloc()) Session_component(_mbox); }
 
 	public:
 
