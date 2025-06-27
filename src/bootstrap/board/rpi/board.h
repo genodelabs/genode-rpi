@@ -21,12 +21,12 @@
 namespace Board { using namespace Hw::Rpi_board; }
 
 
-constexpr unsigned Hw::Page_table::Descriptor_base::_device_tex() { return 0; }
+constexpr unsigned Hw::Page_table_descriptor::device_tex() { return 0; }
 
 
-constexpr bool Hw::Page_table::Descriptor_base::_smp() { return false; }
+constexpr bool Hw::Page_table_descriptor::smp() { return false; }
 
 
-void Hw::Page_table::_table_changed(unsigned long, unsigned long) { }
+void Hw::Page_table::table_changed(unsigned long, unsigned long) { }
 
 #endif /* _SRC__BOOTSTRAP__SPEC__RPI__BOARD_H_ */
