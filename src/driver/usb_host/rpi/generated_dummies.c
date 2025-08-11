@@ -1,7 +1,7 @@
 /*
  * \brief  Dummy definitions of Linux Kernel functions
  * \author Automatically generated file - do no edit
- * \date   2023-07-06
+ * \date   2025-08-11
  */
 
 #include <lx_emul.h>
@@ -516,6 +516,21 @@ struct uts_namespace init_uts_ns;
 bool initcall_debug;
 
 
+#include <linux/initrd.h>
+
+int initrd_below_start_ok;
+
+
+#include <linux/initrd.h>
+
+unsigned long initrd_start, initrd_end;
+
+
+#include <linux/initrd.h>
+
+unsigned long initrd_start, initrd_end;
+
+
 #include <linux/sched.h>
 
 void __sched io_schedule(void)
@@ -573,14 +588,6 @@ bool irq_wait_for_poll(struct irq_desc * desc)
 }
 
 
-#include <linux/irq_work.h>
-
-void irq_work_tick(void)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
 #include <linux/property.h>
 
 bool is_software_node(const struct fwnode_handle * fwnode)
@@ -612,7 +619,7 @@ int kill_pid_usb_asyncio(int sig,int errno,sigval_t addr,struct pid * pid,const 
 
 #include <linux/slab.h>
 
-void * kmem_cache_alloc_lru(struct kmem_cache * s,struct list_lru * lru,gfp_t gfpflags)
+void * kmem_cache_alloc_lru(struct kmem_cache * cachep,struct list_lru * lru,gfp_t flags)
 {
 	lx_emul_trace_and_stop(__func__);
 }
@@ -820,6 +827,16 @@ int __init of_setup_earlycon(const struct earlycon_id * match,unsigned long node
 #include <linux/reboot.h>
 
 enum reboot_mode panic_reboot_mode;
+
+
+#include <linux/initrd.h>
+
+unsigned long phys_initrd_size;
+
+
+#include <linux/initrd.h>
+
+phys_addr_t phys_initrd_start;
 
 
 #include <linux/sysctl.h>
