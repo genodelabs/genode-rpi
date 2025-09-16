@@ -17,6 +17,8 @@
 /* Kernel includes */
 #include <util/mmio.h>
 
+#include <hw/spec/arm/cpu.h>
+
 namespace Board { class Timer; }
 
 
@@ -38,7 +40,7 @@ struct Board::Timer : Genode::Mmio<0x14>
 	/* Returns 64-bit counter value out of both 32-bit registers */
 	Genode::uint64_t _counter() const;
 
-	Timer(unsigned);
+	Timer(Hw::Arm_cpu::Id);
 
 	void init();
 };

@@ -17,6 +17,8 @@
 /* Genode includes */
 #include <util/mmio.h>
 
+#include <hw/spec/arm/cpu.h>
+
 namespace Board {
 
 	class Global_interrupt_controller;
@@ -142,7 +144,7 @@ class Board::Bcm2835_pic : Genode::Mmio<0x28>
 		bool take_request(unsigned &irq);
 		void finish_request() { }
 		void mask();
-		void unmask(unsigned const i, unsigned);
+		void unmask(unsigned const i, Hw::Arm_cpu::Id);
 		void mask(unsigned const i);
 		void irq_mode(unsigned, unsigned, unsigned);
 

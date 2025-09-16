@@ -117,7 +117,7 @@ void Board::Bcm2835_pic::mask()
 }
 
 
-void Board::Bcm2835_pic::unmask(unsigned const i, unsigned)
+void Board::Bcm2835_pic::unmask(unsigned const i, Hw::Arm_cpu::Id)
 {
 	if (i < 32) { write<Irq_enable_gpu_1>(1 << i); }
 	else        { write<Irq_enable_gpu_2>(1 << (i - 32)); }

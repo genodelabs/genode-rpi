@@ -38,7 +38,7 @@ Bootstrap::Platform::Board::Board()
 { }
 
 
-unsigned Bootstrap::Platform::enable_mmu()
+Bootstrap::Platform::Cpu_id Bootstrap::Platform::enable_mmu()
 {
 	using ::Board::Cpu;
 
@@ -88,5 +88,5 @@ unsigned Bootstrap::Platform::enable_mmu()
 	/* invalidate branch predictor */
 	Cpu::Bpiall::write(0);
 
-	return 0;
+	return { 0 };
 }

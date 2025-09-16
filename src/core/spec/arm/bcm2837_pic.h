@@ -16,6 +16,7 @@
 
 #include <util/mmio.h>
 
+#include <hw/spec/arm/cpu.h>
 #include <spec/arm/bcm2835_pic.h>
 
 namespace Board {
@@ -68,8 +69,8 @@ class Board::Bcm2837_pic : Genode::Mmio<0xc0 + 3 * 0x10 + 4>
 		template <unsigned CPU_NUM>
 		struct Core_mailbox_clear : Register<0xc0+CPU_NUM*0x10, 32> {};
 
-		void _ipi(unsigned cpu, bool enable);
-		void _timer_irq(unsigned cpu, bool enable);
+		void _ipi(Hw::Arm_cpu::Id cpu, bool enable);
+		void _timer_irq(Hw::Arm_cpu::Id cpu, bool enable);
 
 		Bcm2835_pic _bcm2835_pic;
 
@@ -85,10 +86,10 @@ class Board::Bcm2837_pic : Genode::Mmio<0xc0 + 3 * 0x10 + 4>
 
 		bool take_request(unsigned &irq);
 		void finish_request() { }
-		void unmask(unsigned const i, unsigned);
+		void unmask(unsigned const i, Hw::Arm_cpu::Id);
 		void mask(unsigned const i);
 		void irq_mode(unsigned, unsigned, unsigned);
-		void send_ipi(unsigned);
+		void send_ipi(Hw::Arm_cpu::Id);
 
 		static constexpr bool fast_interrupts() { return false; }
 };

@@ -25,9 +25,9 @@ Board::Bcm2837_pic::Bcm2837_pic(Global_interrupt_controller &global_irq_ctrl)
 
 bool Board::Bcm2837_pic::take_request(unsigned & irq)
 {
-	unsigned cpu = Board::Cpu::executing_id();
+	Board::Cpu::Id cpu = Board::Cpu::executing_id();
 	Core_irq_source<0>::access_t src = 0;
-	switch (cpu) {
+	switch (cpu.value) {
 	case 0: src = read<Core_irq_source<0>>(); break;
 	case 1: src = read<Core_irq_source<1>>(); break;
 	case 2: src = read<Core_irq_source<2>>(); break;
@@ -41,7 +41,7 @@ bool Board::Bcm2837_pic::take_request(unsigned & irq)
 
 	if (0xf0 & src) {
 		irq = IPI;
-		switch (cpu) {
+		switch (cpu.value) {
 		case 0: write<Core_mailbox_clear<0>>(1); break;
 		case 1: write<Core_mailbox_clear<1>>(1); break;
 		case 2: write<Core_mailbox_clear<2>>(1); break;
@@ -51,7 +51,7 @@ bool Board::Bcm2837_pic::take_request(unsigned & irq)
 	}
 
 	// Gpu interrupt
-	if (cpu == 0 && Core_irq_source<0>::Gpu::get(src)) {
+	if (cpu.value == 0 && Core_irq_source<0>::Gpu::get(src)) {
 		auto result = _bcm2835_pic.take_request(irq);
 		return result;
 	}
@@ -60,10 +60,10 @@ bool Board::Bcm2837_pic::take_request(unsigned & irq)
 }
 
 
-void Board::Bcm2837_pic::_timer_irq(unsigned cpu, bool enable)
+void Board::Bcm2837_pic::_timer_irq(Hw::Arm_cpu::Id cpu, bool enable)
 {
 	unsigned v = enable ? 1 : 0;
-	switch (cpu) {
+	switch (cpu.value) {
 		case 0:
 			write<Core_timer_irq_control<0>::Cnt_p_ns_irq>(v);
 			return;
@@ -81,10 +81,10 @@ void Board::Bcm2837_pic::_timer_irq(unsigned cpu, bool enable)
 }
 
 
-void Board::Bcm2837_pic::_ipi(unsigned cpu, bool enable)
+void Board::Bcm2837_pic::_ipi(Hw::Arm_cpu::Id cpu, bool enable)
 {
 	unsigned v = enable ? 1 : 0;
-	switch (cpu) {
+	switch (cpu.value) {
 		case 0:
 			write<Core_mailbox_irq_control<0>>(v);
 			return;
@@ -102,33 +102,33 @@ void Board::Bcm2837_pic::_ipi(unsigned cpu, bool enable)
 }
 
 
-void Board::Bcm2837_pic::unmask(unsigned const i, unsigned cpu)
+void Board::Bcm2837_pic::unmask(unsigned const i, Hw::Arm_cpu::Id cpu)
 {
 	switch (i) {
 		case TIMER_IRQ: _timer_irq(cpu, true); return;
 		case IPI:       _ipi(cpu, true);       return;
 	}
-	if (cpu == 0) _bcm2835_pic.unmask(i, cpu);
+	if (cpu.value == 0) _bcm2835_pic.unmask(i, cpu);
 }
 
 
 void Board::Bcm2837_pic::mask(unsigned const i)
 {
-	unsigned cpu = Board::Cpu::executing_id();
+	Board::Cpu::Id cpu = Board::Cpu::executing_id();
 	switch (i) {
 		case TIMER_IRQ: _timer_irq(cpu, false); return;
 		case IPI:       _ipi(cpu, false);       return;
 	}
-	if (cpu == 0) _bcm2835_pic.mask(i);
+	if (cpu.value == 0) _bcm2835_pic.mask(i);
 }
 
 
 void Board::Bcm2837_pic::irq_mode(unsigned, unsigned, unsigned) { }
 
 
-void Board::Bcm2837_pic::send_ipi(unsigned cpu_target)
+void Board::Bcm2837_pic::send_ipi(Hw::Arm_cpu::Id cpu_target)
 {
-	switch (cpu_target) {
+	switch (cpu_target.value) {
 	case 0: write<Core_mailbox_set<0>>(1); return;
 	case 1: write<Core_mailbox_set<1>>(1); return;
 	case 2: write<Core_mailbox_set<2>>(1); return;
