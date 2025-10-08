@@ -38,7 +38,7 @@ unsigned long arm_copy_to_user(void *to, const void *from, unsigned long n)
 
 void __iomem * ioremap(resource_size_t phys_addr, size_t size)
 {
-	return lx_emul_io_mem_map(phys_addr, size);
+	return lx_emul_io_mem_map(phys_addr, size, false);
 }
 
 
