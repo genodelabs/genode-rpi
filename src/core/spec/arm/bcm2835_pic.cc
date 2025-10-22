@@ -38,7 +38,7 @@ bool Board::Bcm2835_pic::Usb_dwc_otg::_need_trigger_sof(uint32_t host_frame,
 
 
 Board::Bcm2835_pic::
-Usb_dwc_otg::Usb_dwc_otg(Global_interrupt_controller &global_irq_ctrl)
+Usb_dwc_otg::Usb_dwc_otg(Bcm2835_pic &global_irq_ctrl)
 :
 	Mmio             { {(char *)Platform::mmio_to_virt(Board::USB_DWC_OTG_BASE), Board::USB_DWC_OTG_SIZE} },
 	_global_irq_ctrl { global_irq_ctrl }
@@ -72,12 +72,11 @@ bool Board::Bcm2835_pic::Usb_dwc_otg::handle_sof()
 }
 
 
-Board::Bcm2835_pic::Bcm2835_pic(Global_interrupt_controller &global_irq_ctrl,
-                                Byte_range_ptr const &irq_ctrl)
+Board::Bcm2835_pic::Bcm2835_pic()
 :
-	Mmio({(char *)Platform::mmio_to_virt(irq_ctrl.start != nullptr ? (Genode::addr_t)irq_ctrl.start     : (Genode::addr_t)Board::IRQ_CONTROLLER_BASE),
-	                                     irq_ctrl.start != nullptr ?                 irq_ctrl.num_bytes : (Genode::size_t)Board::IRQ_CONTROLLER_SIZE}),
-	_usb { global_irq_ctrl }
+	Mmio({(char *)Platform::mmio_to_virt(Board::IRQ_CONTROLLER_BASE),
+	     Board::IRQ_CONTROLLER_SIZE}),
+	_usb(*this)
 {
 	mask();
 }

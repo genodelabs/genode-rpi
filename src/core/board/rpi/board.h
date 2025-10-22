@@ -26,9 +26,19 @@
 
 namespace Board {
 	using namespace Hw::Rpi_board;
-	class Pic : public Bcm2835_pic
+
+	struct Global_interrupt_controller
 	{
-		using Bcm2835_pic::Bcm2835_pic;
+		static constexpr unsigned NR_OF_IRQ = Bcm2835_pic::NR_OF_IRQ;
+
+		/* suspend/resume not supported */
+		void resume() {}
+	};
+
+	struct Local_interrupt_controller : Bcm2835_pic
+	{
+		Local_interrupt_controller(Global_interrupt_controller&)
+		: Bcm2835_pic() {}
 	};
 };
 

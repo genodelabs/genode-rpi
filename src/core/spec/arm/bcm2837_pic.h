@@ -72,7 +72,7 @@ class Board::Bcm2837_pic : Genode::Mmio<0xc0 + 3 * 0x10 + 4>
 		void _ipi(Hw::Arm_cpu::Id cpu, bool enable);
 		void _timer_irq(Hw::Arm_cpu::Id cpu, bool enable);
 
-		Bcm2835_pic _bcm2835_pic;
+		Bcm2835_pic &_bcm2835_pic;
 
 		/*
 		 * Noncopyable
@@ -82,7 +82,7 @@ class Board::Bcm2837_pic : Genode::Mmio<0xc0 + 3 * 0x10 + 4>
 
 	public:
 
-		Bcm2837_pic(Global_interrupt_controller &);
+		Bcm2837_pic(Bcm2835_pic &);
 
 		bool take_request(unsigned &irq);
 		void finish_request() { }

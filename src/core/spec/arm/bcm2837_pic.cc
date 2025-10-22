@@ -16,10 +16,11 @@
 #include <platform.h>
 
 
-Board::Bcm2837_pic::Bcm2837_pic(Global_interrupt_controller &global_irq_ctrl)
+Board::Bcm2837_pic::Bcm2837_pic(Bcm2835_pic &bcm2835_pic)
 :
-	Mmio({(char *)Core::Platform::mmio_to_virt(Board::LOCAL_IRQ_CONTROLLER_BASE), Board::LOCAL_IRQ_CONTROLLER_SIZE}),
-	_bcm2835_pic(global_irq_ctrl, {(char *)Board::IRQ_CONTROLLER_BASE, Board::IRQ_CONTROLLER_SIZE})
+	Mmio({(char *)Core::Platform::mmio_to_virt(Board::LOCAL_IRQ_CONTROLLER_BASE),
+	     Board::LOCAL_IRQ_CONTROLLER_SIZE}),
+	_bcm2835_pic(bcm2835_pic)
 { }
 
 

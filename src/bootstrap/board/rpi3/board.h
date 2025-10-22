@@ -27,7 +27,17 @@ namespace Board {
 		static void wake_up_all_cpus(void*);
 	};
 
-	struct Pic { }; /* dummy object */
+	/**
+	 * On Raspberry 3 we do not need to initialize anything relevant
+	 * (e.g. secure IRQs) within bootstrap, therefore provide dummy
+	 * class implementations used within the generic ARMv8 initialization
+	 * code.
+	 */
+	struct Global_interrupt_controller { };
+	struct Local_interrupt_controller
+	{
+		Local_interrupt_controller(Global_interrupt_controller&) {}
+	};
 };
 
 #endif /* _BOOTSTRAP__SPEC__RPI3__BOARD_H_ */

@@ -19,27 +19,7 @@
 
 #include <hw/spec/arm/cpu.h>
 
-namespace Board {
-
-	class Global_interrupt_controller;
-	class Bcm2835_pic;
-}
-
-
-class Board::Global_interrupt_controller
-{
-	private:
-
-		int _sof_cnt { 0 };
-
-	public:
-
-		void init() { }
-
-		int increment_and_return_sof_cnt() { return ++_sof_cnt; }
-
-		void reset_sof_cnt() { _sof_cnt = 0; }
-};
+namespace Board { class Bcm2835_pic; }
 
 
 class Board::Bcm2835_pic : Genode::Mmio<0x28>
@@ -102,7 +82,7 @@ class Board::Bcm2835_pic : Genode::Mmio<0x28>
 					struct Num : Bitfield<0, 14> { };
 				};
 
-				Global_interrupt_controller &_global_irq_ctrl;
+				Bcm2835_pic &_global_irq_ctrl;
 
 				bool _is_sof() const
 				{
@@ -114,12 +94,14 @@ class Board::Bcm2835_pic : Genode::Mmio<0x28>
 
 			public:
 
-				Usb_dwc_otg(Global_interrupt_controller &global_irq_ctrl);
+				Usb_dwc_otg(Bcm2835_pic &global_irq_ctrl);
 
 				bool handle_sof();
 		};
 
 		Usb_dwc_otg _usb;
+
+		int _sof_cnt { 0 };
 
 		/**
 		 * Return true if specified interrupt is pending
@@ -138,8 +120,7 @@ class Board::Bcm2835_pic : Genode::Mmio<0x28>
 
 	public:
 
-		Bcm2835_pic(Global_interrupt_controller &global_irq_ctrl,
-		            Genode::Byte_range_ptr const &irq_ctrl = {nullptr, 0});
+		Bcm2835_pic();
 
 		bool take_request(unsigned &irq);
 		void finish_request() { }
@@ -149,6 +130,13 @@ class Board::Bcm2835_pic : Genode::Mmio<0x28>
 		void irq_mode(unsigned, unsigned, unsigned);
 
 		static constexpr bool fast_interrupts() { return false; }
+
+		/* suspend/resume is not supported on this platform */
+		void resume() { }
+
+		int increment_and_return_sof_cnt() { return ++_sof_cnt; }
+
+		void reset_sof_cnt() { _sof_cnt = 0; }
 };
 
 #endif /* _CORE__BCM2835__PIC_H_ */

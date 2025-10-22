@@ -26,7 +26,9 @@
 namespace Board {
 
 	using namespace Hw::Rpi3_board;
-	class Pic : public Bcm2837_pic
+
+	using Global_interrupt_controller = Bcm2835_pic;
+	struct Local_interrupt_controller : Bcm2837_pic
 	{
 		using Bcm2837_pic::Bcm2837_pic;
 	};
