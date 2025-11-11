@@ -12,7 +12,7 @@
  * under the terms of the GNU Affero General Public License version 3.
  */
 
-#include <hw/assert.h>
+#include <assert.h>
 #include <platform.h>
 
 using namespace Hw::Rpi_board;
@@ -52,7 +52,7 @@ Bootstrap::Platform::Cpu_id Bootstrap::Platform::enable_mmu()
 	};
 
 	/* check for mapping restrictions */
-	assert(!Ctr::P::get(Cpu::Ctr::read()));
+	ASSERT(!Ctr::P::get(Cpu::Ctr::read()));
 
 	/* invalidate TLB */
 	Cpu::Tlbiall::write(0);
